@@ -18,18 +18,36 @@ browser = Watir::Browser.new BROWSER
 browser.goto 'youtube.com'
 auth_cookies.each { |n, v| browser.cookies.add n, v, path: '/', expires: Date.today.next_day, secure: false, domain: '.youtube.com' }
 
-[saved_playlists[0], saved_playlists[1]].each do |pl|
-  browser.goto "youtube.com/playlist?list=#{pl[:id]}"
-  icon = browser.element(css: 'button[aria-label="Save playlist"] path.yt-icon')
-  icon_attr = icon.attribute_value('d')
-  puts "Playlist '#{pl[:name]}' is already saved" if icon_attr == ALREADY_SAVED_ICON_ATTR
-  next if icon_attr == ALREADY_SAVED_ICON_ATTR
+begin
+  saved_playlists.each do |pl|
+    browser.goto "youtube.com/playlist?list=#{pl[:id]}"
+    browser.wait
+    new_button = browser.element(css: 'button[aria-label="Save playlist"]')
+    old_button = browser.button(id: 'gh-playlist-save')
+    Watir::Wait.until { new_button.present? || old_button.present? }
+    if new_button.exists?
+      style = :new
+      button = new_button
+      already_saved = button.inner_html.include?(ALREADY_SAVED_ICON_ATTR)
+    elsif old_button.exists?
+      style = :old
+      button = old_button
+      already_saved = button.span(class: 'yt-uix-button-content').text == 'Saved'
+    else
+      raise 'Cannot find save button'
+    end
+    puts "Playlist '#{pl[:name]}' is already saved" if already_saved
+    next if already_saved
 
-  raise('YouTube has been updated? The icon has unexpected attribute value. Fix the script first!') unless icon_attr == SAVE_ICON_ATTR
+    raise('YouTube has been updated? The icon has unexpected attribute value. Fix the script first!') unless (style == :old ||
+      button.inner_html.include?(SAVE_ICON_ATTR))
 
-  next unless confirm?("Saving playlist '#{pl[:name]}' from channel '#{pl[:channel_name]}'")
-  browser.element(css: 'button[aria-label="Save playlist"]').click
-  Watir::Wait.until { browser.text.include? 'Added to Library' }
+    next unless confirm?("Saving playlist '#{pl[:name]}' from channel '#{pl[:channel_name]}'")
+    sleep 1 # there's not other way – nothing deterministic to wait on
+    Watir::Wait.until { browser.div(id: 'pl-video-list').present? } if style == :old
+    button.click!
+    Watir::Wait.until { browser.text.include?('Added to Library') || browser.text.include?('Saved to Playlists') }
+  end
+ensure
+  browser.close
 end
-
-browser.close
