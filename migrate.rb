@@ -8,6 +8,8 @@ require 'yaml'
 require_relative 'lib/helper'
 require_relative 'lib/youtube'
 
+force_reload_data = ARGV.first == 'reload'
+
 APPLICATION_NAME = 'YouTube Data Migration'.freeze
 
 READ_SCOPE = Google::Apis::YoutubeV3::AUTH_YOUTUBE_READONLY
@@ -28,7 +30,7 @@ new_service.authorization = authorize 'manage your new account', './auth/new_acc
 SUBCRIBED_CHANNELS = './data/old-subscribed-channels.yaml'.freeze
 PLAYLISTS = './data/old-playlists.yaml'.freeze
 
-if File.exist? SUBCRIBED_CHANNELS
+if !force_reload_data && File.exist?(SUBCRIBED_CHANNELS)
   puts 'Loading subscribed channels from file'
   my_subscribed_channels = YAML.load File.read SUBCRIBED_CHANNELS
 else
@@ -37,7 +39,7 @@ else
   File.write SUBCRIBED_CHANNELS, YAML.dump(my_subscribed_channels)
 end
 
-if File.exist? PLAYLISTS
+if !force_reload_data && File.exist?(PLAYLISTS)
   puts 'Loading playlists from file'
   my_old_playlists = YAML.load File.read PLAYLISTS
 else
