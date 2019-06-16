@@ -3,3 +3,4 @@ auth/
 data/
 __pycache__
 *.sublime-workspace
+.DS_Store

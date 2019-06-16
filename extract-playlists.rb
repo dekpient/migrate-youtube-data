@@ -20,7 +20,7 @@ def extract_playlist_data(pl)
     channel_name: pl['longBylineText']['runs'][0]['text'],
     channel_id: pl['longBylineText']['runs'][0]['navigationEndpoint']['browseEndpoint']['browseId'],
     id: pl['playlistId'],
-    name: pl['title']['simpleText']
+    name: pl['title']['runs'][0]['text']
   }
 end
 

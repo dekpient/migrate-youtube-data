@@ -22,13 +22,16 @@ begin
   saved_playlists.each do |pl|
     browser.goto "youtube.com/playlist?list=#{pl[:id]}"
     browser.wait
-    new_button = browser.element(css: 'button[aria-label="Save playlist"]')
+    new_button = browser.element(css: 'button#button[aria-label="Save playlist"]')
+    saved_button = browser.element(css: 'button#button[aria-label="Remove"]')
     old_button = browser.button(id: 'gh-playlist-save')
-    Watir::Wait.until { new_button.present? || old_button.present? }
+    Watir::Wait.until { new_button.present? || saved_button.present? || old_button.present? }
+    puts "Playlist '#{pl[:name]}' is already saved" if saved_button.present?
+    next if saved_button.present?
     if new_button.exists?
       style = :new
       button = new_button
-      already_saved = button.inner_html.include?(ALREADY_SAVED_ICON_ATTR)
+      already_saved = false
     elsif old_button.exists?
       style = :old
       button = old_button
